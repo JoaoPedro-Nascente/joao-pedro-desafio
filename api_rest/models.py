@@ -44,4 +44,4 @@ class Transaction(models.Model):
     )
 
     def __str__(self):
-        return super().__str__()
+        return f"{self.transaction_description}, {self.transaction_date}, valor: R${self.transaction_amount}, tipo:  {self.transaction_type}"
