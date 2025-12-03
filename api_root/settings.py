@@ -125,9 +125,6 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# TODO: Rever antes de entregar
-#CORS_ALLOW_ORIGINS_ALL = True
-
 CORS_ALLOW_ORIGINS = [
     'http://localhost:8080',
 ]

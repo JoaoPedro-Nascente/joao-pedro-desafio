@@ -1,11 +1,15 @@
 from django.shortcuts import render
 
+from django.db.models import Sum, DecimalField, Q
+
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 
 from .models import Transaction
+from .models import TypeTransaction
 from .serializers import TransactionSerializer
+from .serializers import SummarySerializer
 
 import json
 
@@ -89,3 +93,33 @@ def transaction_list_create(request):
         return get_filtered_transactions(request.query_params)
 
     return Response(status.HTTP_400_BAD_REQUEST)
+
+
+def create_summary():
+    summary = Transaction.objects.aggregate(
+        total_income = Sum(
+            'amount', filter=Q(type=TypeTransaction.INCOME)
+        ),
+        total_expense = Sum(
+            'amount', filter=Q(type=TypeTransaction.EXPENSE)
+        )
+    )
+
+    total_income = summary.get('total_income') or 0.00
+    total_expense = summary.get('total_expense') or 0.00
+
+    net_balance = total_income - total_expense
+
+    return {
+        'total_income': total_income,
+        'total_expense': total_expense,
+        'net_balance': net_balance
+    }
+
+@api_view(['GET'])
+def summary_view(request):
+    summary_data = create_summary()
+
+    serializer = SummarySerializer(summary_data)
+
+    return Response(serializer.data, status=status.HTTP_200_OK)
