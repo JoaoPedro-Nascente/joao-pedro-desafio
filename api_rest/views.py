@@ -9,6 +9,24 @@ from .serializers import TransactionSerializer
 
 import json
 
+#It's a very simple function, but it can be easily modified to become more complex in the future
+def get_transaction_by_id(transaction):
+    serializer = TransactionSerializer(transaction)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+def update_transaction(data, transaction):
+    serializer = TransactionSerializer(transaction, data=data, partial=True)
+
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+def delete_transaction(transaction):
+    transaction.delete()
+    return Response(status.HTTP_204_NO_CONTENT)
+    
+
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 def transactions_manager(request, id):
     try:
@@ -18,22 +36,19 @@ def transactions_manager(request, id):
         return Response(status.HTTP_404_NOT_FOUND)
 
     if request.method == 'GET':
-        serializer = TransactionSerializer(transaction)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return get_transaction_by_id(transaction)
 
     
     if (request.method == 'PUT') or (request.method == 'PATCH'):
-        serializer = TransactionSerializer(transaction, data=request.data, partial=True)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        return update_transaction(request.data, transaction)
 
     if request.method == 'DELETE':
-        transaction.delete()
-        return Response(status.HTTP_204_NO_CONTENT)
+        return delete_transaction(transaction)
 
+    #If no method is valid
     return Response(status.HTTP_400_BAD_REQUEST)
+
+
 
 @api_view(['POST'])
 def create_new_transaction(request):
