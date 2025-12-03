@@ -8,25 +8,23 @@ class TypeTransaction(models.TextChoices):
     Classe auxiliar de Transaction.transaction_type
     """
     INCOME = "income", "Income Transaction"
-    OUTCOME = "outcome", "Outcome Transaction"
+    EXPENSE = "expense", "Expense Transaction"
 
 class Transaction(models.Model):
     """
     Modelo principal
     """
-    transaction_id = models.UUIDField(
+    id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
         editable=False
     )
 
-    transaction_description = models.CharField(
+    description = models.CharField(
         max_length=100,
-        default=""
     )
 
-    transaction_amount = models.DecimalField(
-        default=0.0,
+    amount = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         validators=[
@@ -34,14 +32,13 @@ class Transaction(models.Model):
         ]
     )
     
-    transaction_type = models.CharField(
+    type = models.CharField(
         max_length=50,
-        choices=TypeTransaction.choices
+        choices=TypeTransaction.choices,
     )
     
-    transaction_date = models.DateField(
-        default=timezone.now
+    date = models.DateField(
     )
 
     def __str__(self):
-        return f"{self.transaction_description}, {self.transaction_date}, valor: R${self.transaction_amount}, tipo:  {self.transaction_type}"
+        return f"{self.description}, {self.date}, valor: R${self.amount}, tipo:  {self.type}"

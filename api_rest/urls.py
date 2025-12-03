@@ -4,5 +4,6 @@ from django.urls import path, include
 from . import views
 
 urlpatterns = [
-    path(':<str:id>', views.get_transactions_by_id),
+    path(':<str:id>', views.transactions_manager),
+    path('', views.create_new_transaction),
 ]
