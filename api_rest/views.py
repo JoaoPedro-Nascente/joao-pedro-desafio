@@ -22,6 +22,7 @@ def update_transaction(data, transaction):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 def delete_transaction(transaction):
     transaction.delete()
     return Response(status.HTTP_204_NO_CONTENT)
@@ -49,16 +50,42 @@ def transactions_manager(request, id):
     return Response(status.HTTP_400_BAD_REQUEST)
 
 
+def create_new_transaction(data):
+    new_transaction = data
 
-@api_view(['POST'])
-def create_new_transaction(request):
+    serializer = TransactionSerializer(data=new_transaction)
+
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+def get_filtered_transactions(query_params):
+    transactions = Transaction.objects.all()
+
+    filters = {}
+
+    filter_by_type = query_params.get('type')
+    if filter_by_type:
+        filters['type'] = filter_by_type
+
+    filter_by_description = query_params.get('description')
+    if filter_by_description:
+        filters['description__icontains'] = filter_by_description
+
+    if filters:
+        transactions = transactions.filter(**filters)
+
+    serializer = TransactionSerializer(transactions, many=True)
+
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST', 'GET'])
+def transaction_list_create(request):
     if request.method == 'POST':
-        new_transaction = request.data
+        return create_new_transaction(request.data)
 
-        serializer = TransactionSerializer(data=new_transaction)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+    if request.method == 'GET':
+        return get_filtered_transactions(request.query_params)
 
     return Response(status.HTTP_400_BAD_REQUEST)

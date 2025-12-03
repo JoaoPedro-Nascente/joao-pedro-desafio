@@ -5,5 +5,5 @@ from . import views
 
 urlpatterns = [
     path(':<str:id>', views.transactions_manager),
-    path('', views.create_new_transaction),
+    path('', views.transaction_list_create),
 ]
