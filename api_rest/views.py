@@ -11,28 +11,27 @@ import json
 
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 def transactions_manager(request, id):
-    if request.method == 'GET':
-        try:
-            transaction = Transaction.objects.get(pk=id)
-
-            serializer = TransactionSerializer(transaction)
-            return Response(serializer.data)
+    try:
+        transaction = Transaction.objects.get(pk=id)
         
-        except:
-            return Response(status.HTTP_404_NOT_FOUND)
+    except:
+        return Response(status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = TransactionSerializer(transaction)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     
     if (request.method == 'PUT') or (request.method == 'PATCH'):
-        try:
-            updated_transaction = Transaction.objects.get(pk=id)
-        except:
-            return Response(status.HTTP_404_NOT_FOUND)
-        
-        is_partial = request.method == 'PATCH'
-        serializer = TransactionSerializer(updated_transaction, data=request.data, partial=is_partial)
+        serializer = TransactionSerializer(transaction, data=request.data, partial=True)
 
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
+
+    if request.method == 'DELETE':
+        transaction.delete()
+        return Response(status.HTTP_204_NO_CONTENT)
 
     return Response(status.HTTP_400_BAD_REQUEST)
 
