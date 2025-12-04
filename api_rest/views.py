@@ -10,6 +10,7 @@ from .models import Transaction
 from .models import TypeTransaction
 from .serializers import TransactionSerializer
 from .serializers import SummarySerializer
+from .pagination import StandardResultsSetPagination
 
 import json
 
@@ -79,9 +80,7 @@ def get_filtered_transactions(query_params):
     if filters:
         transactions = transactions.filter(**filters)
 
-    serializer = TransactionSerializer(transactions, many=True)
-
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return transactions
 
 
 @api_view(['POST', 'GET'])
@@ -90,7 +89,14 @@ def transaction_list_create(request):
         return create_new_transaction(request.data)
 
     if request.method == 'GET':
-        return get_filtered_transactions(request.query_params)
+        filtered_transactions = get_filtered_transactions(request.query_params)
+        paginator = StandardResultsSetPagination()
+
+        page_transactions = paginator.paginate_queryset(filtered_transactions, request)
+
+        serializer = TransactionSerializer(page_transactions, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
     return Response(status.HTTP_400_BAD_REQUEST)
 
