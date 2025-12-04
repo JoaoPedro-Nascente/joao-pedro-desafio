@@ -1,6 +1,7 @@
 from django.shortcuts import render
 
 from django.db.models import Sum, DecimalField, Q
+from django.core.exceptions import ObjectDoesNotExist
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -43,7 +44,6 @@ def transactions_manager(request, id):
 
     if request.method == 'GET':
         return get_transaction_by_id(transaction)
-
     
     if (request.method == 'PUT') or (request.method == 'PATCH'):
         return update_transaction(request.data, transaction)
@@ -63,6 +63,8 @@ def create_new_transaction(data):
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    else:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 def get_filtered_transactions(query_params):
     transactions = Transaction.objects.all()
