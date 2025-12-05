@@ -31,7 +31,7 @@ def register_user(request):
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-#It's a very simple function, but it can be easily modified to become more complex in the future
+# São funções muito simples, mas separadas dessa forma é mais simples de alterá-las no futuro
 def get_transaction_by_id(transaction):
     serializer = TransactionSerializer(transaction)
     return Response(serializer.data, status=status.HTTP_200_OK)
@@ -49,7 +49,10 @@ def delete_transaction(transaction):
     transaction.delete()
     return Response(status.HTTP_204_NO_CONTENT)
     
-
+# ['GET'] - Retorna uma transaction fornecida
+# ['DELETE'] - Deleta uma transaction fornecida
+# ['PUT'] - Executa uma alteração total em uma transaction fornecida
+# ['PATCH'] - Executa uma alteração parcial em uma transaction fornecida
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 def transactions_manager(request, id):
     try:
@@ -67,7 +70,7 @@ def transactions_manager(request, id):
     if request.method == 'DELETE':
         return delete_transaction(transaction)
 
-    #If no method is valid
+    #Se nenhum método for válido
     return Response(status.HTTP_400_BAD_REQUEST)
 
 
@@ -100,7 +103,8 @@ def get_filtered_transactions(query_params):
 
     return transactions
 
-
+# ['POST'] - Cria uma nova transaction
+# ['GET'] - Retorna uma lista filtrada pelos atributos passados na url
 @api_view(['POST', 'GET'])
 def transaction_list_create(request):
     if request.method == 'POST':
@@ -140,6 +144,7 @@ def create_summary():
         'net_balance': net_balance
     }
 
+#Gerencia a criação do sumário, qualquer usuário pode acessar
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def summary_view(request):
