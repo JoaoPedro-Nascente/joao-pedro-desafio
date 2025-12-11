@@ -37,7 +37,7 @@ def delete_transaction(transaction):
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 def transactions_manager(request, id):
     try:
-        transaction = Transaction.objects.get(pk=id)
+        transaction = Transaction.objects.get(pk=id, user=request.user)
         
     except:
         return Response(status.HTTP_404_NOT_FOUND)
@@ -52,22 +52,21 @@ def transactions_manager(request, id):
         return delete_transaction(transaction)
 
     #Se nenhum método for válido
-    return Response(status.HTTP_400_BAD_REQUEST)
+    return Response(status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-def create_new_transaction(data):
+def create_new_transaction(data, user):
     new_transaction = data
-
     serializer = TransactionSerializer(data=new_transaction)
 
     if serializer.is_valid():
-        serializer.save()
+        serializer.save(user=user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     else:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-def get_filtered_transactions(query_params):
-    transactions = Transaction.objects.all()
+def get_filtered_transactions(query_params, user):
+    transactions = Transaction.objects.filter(user=user)
 
     filters = {}
 
@@ -89,10 +88,10 @@ def get_filtered_transactions(query_params):
 @api_view(['POST', 'GET'])
 def transaction_list_create(request):
     if request.method == 'POST':
-        return create_new_transaction(request.data)
+        return create_new_transaction(request.data, request.user)
 
     if request.method == 'GET':
-        filtered_transactions = get_filtered_transactions(request.query_params)
+        filtered_transactions = get_filtered_transactions(request.query_params, request.user)
         paginator = StandardResultsSetPagination()
 
         page_transactions = paginator.paginate_queryset(filtered_transactions, request)
@@ -101,11 +100,13 @@ def transaction_list_create(request):
 
         return paginator.get_paginated_response(serializer.data)
 
-    return Response(status.HTTP_400_BAD_REQUEST)
+    return Response(status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-def create_summary():
-    summary = Transaction.objects.aggregate(
+def create_summary(user):
+    transactions = Transaction.objects.filter(user=user)
+
+    summary = transactions.aggregate(
         total_income = Sum(
             'amount', filter=Q(type=TypeTransaction.INCOME)
         ),
@@ -127,9 +128,8 @@ def create_summary():
 
 #Gerencia a criação do sumário, qualquer usuário pode acessar
 @api_view(['GET'])
-@permission_classes([AllowAny])
 def summary_view(request):
-    summary_data = create_summary()
+    summary_data = create_summary(request.user)
 
     serializer = SummarySerializer(summary_data)
 

@@ -1,8 +1,15 @@
 from rest_framework import serializers
+from decimal import Decimal
 
 from ..models import Transaction
 
 class TransactionSerializer(serializers.ModelSerializer):
+    def validate_amount(self, value):
+        if value <= Decimal('0.00'):
+            raise serializers.ValidationError("'Amount' must be positive and greater than zero.")
+        
+        return value
+    
     class Meta:
         model = Transaction
         fields = "__all__"

@@ -13,14 +13,18 @@ from .views import summary_view, transaction_list_create, create_summary, get_fi
 #Unit test for views helpers
 class HelpersTestCase(TestCase):
     def setUp(self):
-        Transaction.objects.create(description="Salario", amount=5000.00, type="income", date=date(2025, 1, 1))
-        Transaction.objects.create(description="Aluguel", amount=1500.00, type="expense", date=date(2025, 1, 5))
-        Transaction.objects.create(description="Conta de Luz", amount=200.00, type="expense", date=date(2025, 1, 10))
-        Transaction.objects.create(description="Freelance", amount=1000.00, type="income", date=date(2025, 1, 15))
+        self.username_a = 'testUser_a'
+        self.password_a = 'testPassword_b'
+        self.user = User.objects.create_user(username=self.username_a, password=self.password_a)
+
+        Transaction.objects.create(user=self.user, description="Salario", amount=5000.00, type="income", date=date(2025, 1, 1))
+        Transaction.objects.create(user=self.user, description="Aluguel", amount=1500.00, type="expense", date=date(2025, 1, 5))
+        Transaction.objects.create(user=self.user, description="Conta de Luz", amount=200.00, type="expense", date=date(2025, 1, 10))
+        Transaction.objects.create(user=self.user, description="Freelance", amount=1000.00, type="income", date=date(2025, 1, 15))
 
     #create_summary()
     def test_create_summary(self):
-        data = create_summary()
+        data = create_summary(self.user)
         '''
         Income: 6000.00
         Outcome: 1700.00
@@ -33,28 +37,29 @@ class HelpersTestCase(TestCase):
     #get_filtered_transactions()
     def test_filter_by_type(self):
         params = {'type': 'income'}
-        filtered_transactions = get_filtered_transactions(params)
+        filtered_transactions = get_filtered_transactions(params, self.user)
 
         self.assertEqual(filtered_transactions.count(), 2)
         self.assertTrue(all(t.type == 'income' for t in filtered_transactions))
 
     def test_filter_by_description(self):
         params = {'description': 'aluguel'}
-        filtered_transactions = get_filtered_transactions(params)
+        filtered_transactions = get_filtered_transactions(params, self.user)
 
         self.assertEqual(filtered_transactions.count(), 1)
         self.assertEqual(filtered_transactions.first().description.lower(), "aluguel")
 
+
 #Views unit tests
 class TransactionAPITestCase(APITestCase):
     def setUp(self):
-        self.username = 'testUser'
-        self.password = 'testPassword'
-        self.user = User.objects.create_user(username=self.username, password=self.password)
+        self.username_a = 'testUser_a'
+        self.password_a = 'testPassword_b'
+        self.user = User.objects.create_user(username=self.username_a, password=self.password_a)
 
         login_response = self.client.post(
             reverse('token_obtain_pair'),
-            {'username': self.username, 'password': self.password},
+            {'username': self.username_a, 'password': self.password_a},
             format='json'
         )
         self.assertEqual(login_response.status_code, status.HTTP_200_OK, "Failed to obtain token.")
@@ -66,6 +71,7 @@ class TransactionAPITestCase(APITestCase):
         self.summary_url = reverse('summary_view')
 
         self.test_transaction = Transaction.objects.create(
+            user=self.user,
             description='Teste',
             amount=111.11,
             type='expense',
@@ -77,6 +83,7 @@ class TransactionAPITestCase(APITestCase):
         #Creates 15 objects (counting with the 'Teste' one) varying between expense and income
         for i in range(1, 15):
             Transaction.objects.create(
+            user=self.user,
             description=f'Item {i}',
             amount=Decimal(i),
             type='expense' if i % 2 == 0 else 'income',
@@ -84,6 +91,7 @@ class TransactionAPITestCase(APITestCase):
             )
 
         self.valid_data = {
+            'user': self.user.id,
             'description': 'Novo Teste Valido',
             'amount': 250.50,
             'type': 'income',
@@ -91,11 +99,26 @@ class TransactionAPITestCase(APITestCase):
         }
 
         self.invalid_data = {
+            'user': self.user.id,
             'description': 'Erro',
             'amount': -250.50, #Should not be accepted amount < 0
             'type': 'income',
             'date': '2025-12-01'
         }
+
+        self.username_b = 'testUser_b'
+        self.password_b = 'testPassword_b'
+        self.user_b = User.objects.create_user(username=self.username_b, password=self.password_b)
+
+        self.transaction_user_b = Transaction.objects.create(
+            user=self.user_b,
+            description='Transacao usuario b',
+            amount=500.00,
+            type='expense',
+            date='2025-12-31'
+        )
+
+        self.transactions_manager_other_url = reverse('transactions_manager', args=[self.transaction_user_b.id])
 
     #transactions_manager()
     # ['POST']
@@ -150,8 +173,22 @@ class TransactionAPITestCase(APITestCase):
         fail_request_url = reverse('transactions_manager', args=[invalid_id])
 
         response = self.client.get(fail_request_url)
-        print(response.status_code, response.data)
         self.assertEqual(response.data, status.HTTP_404_NOT_FOUND)
+
+    def test_get_transaction_by_id_fail_other_user(self):
+        response = self.client.get(self.transactions_manager_other_url)
+        
+        self.assertEqual(response.data, status.HTTP_404_NOT_FOUND)
+        
+        self.assertNotContains(response, self.transaction_user_b.description)
+
+    def test_list_transactions_only_shows_own_data(self):
+        response = self.client.get(self.list_create_url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 15) 
+        
+        self.assertNotContains(response, self.transaction_user_b.description)
 
     #transactions_manager()['PUT', 'PATCH']
     def test_update_transaction_full_put(self):
@@ -176,6 +213,16 @@ class TransactionAPITestCase(APITestCase):
         self.assertEqual(self.test_transaction.description, "PATCH")
         self.assertEqual(self.test_transaction.amount, Decimal('111.11'))
 
+    def test_update_other_user_data_fails(self):
+        data_to_update = {'description': 'It must fail'}
+        
+        response = self.client.put(self.transactions_manager_other_url, data_to_update, format='json')
+        
+        self.assertEqual(response.data, status.HTTP_404_NOT_FOUND)
+        
+        self.transaction_user_b.refresh_from_db()
+        self.assertNotEqual(self.transaction_user_b.description, 'It must fail')
+
     #transactions_manager()['DELETE']
     def test_delete_transaction_success(self):
         initial_count = Transaction.objects.count()
@@ -183,3 +230,23 @@ class TransactionAPITestCase(APITestCase):
         
         self.assertEqual(response.data, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Transaction.objects.count(), initial_count - 1)
+
+    def test_delete_other_user_data_fails(self):
+            initial_count = Transaction.objects.count()
+            
+            response = self.client.delete(self.transactions_manager_other_url)
+            
+            self.assertEqual(response.data, status.HTTP_404_NOT_FOUND)
+            
+            self.assertEqual(Transaction.objects.count(), initial_count)
+
+    #Test for authenticated routes
+    def test_access_denied_without_token(self):
+            self.client.credentials() 
+            
+            response = self.client.get(self.list_create_url)
+            
+            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+            self.assertIn('Authentication credentials were not provided', str(response.data))
+
+            self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.access_token}')

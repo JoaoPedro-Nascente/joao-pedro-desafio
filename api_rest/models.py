@@ -1,5 +1,5 @@
 from django.db import models
-from django.utils import timezone
+from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
 from decimal import Decimal
 import uuid
@@ -15,6 +15,9 @@ class Transaction(models.Model):
     """
     Modelo principal
     """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
