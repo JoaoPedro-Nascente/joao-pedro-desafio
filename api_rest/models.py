@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
+from decimal import Decimal
 import uuid
 
 class TypeTransaction(models.TextChoices):
@@ -28,7 +29,7 @@ class Transaction(models.Model):
         max_digits=12,
         decimal_places=2,
         validators=[
-            MinValueValidator(0.0)
+            MinValueValidator(Decimal(0.01))
         ]
     )
     

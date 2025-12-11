@@ -84,6 +84,20 @@ class AuthAPITestCase(APITestCase):
 #Views unit tests
 class TransactionAPITestCase(APITestCase):
     def setUp(self):
+        self.username = 'testUser'
+        self.password = 'testPassword'
+        self.user = User.objects.create_user(username=self.username, password=self.password)
+
+        login_response = self.client.post(
+            reverse('token_obtain_pair'),
+            {'username': self.username, 'password': self.password},
+            format='json'
+        )
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK, "Failed to obtain token.")
+        self.access_token = login_response.data['access']
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
+
         self.list_create_url = reverse('transaction_list_create')
         self.summary_url = reverse('summary_view')
 

@@ -101,7 +101,7 @@ def get_filtered_transactions(query_params):
     if filters:
         transactions = transactions.filter(**filters)
 
-    return transactions
+    return transactions.order_by('-date')
 
 # ['POST'] - Cria uma nova transaction
 # ['GET'] - Retorna uma lista filtrada pelos atributos passados na url
