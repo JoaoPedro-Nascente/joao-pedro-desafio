@@ -45,4 +45,4 @@ class Transaction(models.Model):
     )
 
     def __str__(self):
-        return f"{self.description}, {self.date}, valor: R${self.amount}, tipo:  {self.type}"
+        return f"{self.description}, {self.date}, valor: R${self.amount}, tipo: {self.type}"

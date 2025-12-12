@@ -120,6 +120,12 @@ class TransactionAPITestCase(APITestCase):
 
         self.transactions_manager_other_url = reverse('transactions_manager', args=[self.transaction_user_b.id])
 
+    #model test
+    def test_model_representation_str(self):
+        expected_str = f'Teste, , 2025-12-01, valor: R$111.11, tipo: expense'
+
+        self.assertEqual(str(self.test_transaction).split(',')[0], expected_str.split(',')[0])
+
     #transactions_manager()
     # ['POST']
     def test_create_transaction_success(self):
@@ -250,3 +256,15 @@ class TransactionAPITestCase(APITestCase):
             self.assertIn('Authentication credentials were not provided', str(response.data))
 
             self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.access_token}')
+
+    #Summary
+    def test_get_summary_success(self):
+        response = self.client.get(self.summary_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        self.assertIn('net_balance', response.data)
+        self.assertIn('total_income', response.data)
+        
+        self.assertEqual(response.data['net_balance'], '-118.11') 
+        self.assertEqual(response.data['total_income'], '49.00')

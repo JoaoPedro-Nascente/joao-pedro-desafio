@@ -1,142 +1,143 @@
+````markdown
+# 💰 API REST - Controle Financeiro Pessoal
 
------
+Este repositório contém o backend da aplicação de Controle Financeiro Pessoal, desenvolvido utilizando **Django** e **Django REST Framework (DRF)**.
 
-# 🌟 API RESTful para Controle de Despesas | Desafio IUPI
+A API é responsável por gerenciar dados de transações (receitas e despesas), calcular o saldo em tempo real e fornecer segurança através de autenticação JWT.
 
-Este projeto implementa uma API RESTful completa para gerenciamento de transações financeiras (`Controle de Despesas`), conforme os requisitos do Desafio de Estágio Backend da IUPI. A API oferece o CRUD completo, um *endpoint* de resumo financeiro (`/summary/`) e segurança por **Autenticação JWT**.
+## 🛠️ Tecnologias e Dependências
 
-## 🚀 Stack Tecnológica
+* **Linguagem:** Python 3.12+
+* **Framework Web:** Django 5.x
+* **API Framework:** Django REST Framework
+* **Autenticação:** Simple JWT
+* **Banco de Dados:** SQLite (padrão de desenvolvimento)
+* **Testes e Cobertura:** `unittest` (integrado ao Django) e `coverage.py`
+* **Segurança:** `django-cors-headers`
 
-| Componente | Tecnologia | Observações |
-| :--- | :--- | :--- |
-| **Backend** | Python 3.12.2, Django | Framework web principal. |
-| **API** | Django REST Framework (DRF) | Usado para serialização e construção de *views* REST. |
-| **Autenticação** | djangorestframework-simplejwt | Padrão JWT para acesso *stateless* e seguro. |
-| **Banco de Dados**| SQLite (Padrão) | Leve e baseado em arquivo, ideal para desenvolvimento. |
+## ⚙️ Configuração e Instalação
 
------
+Siga os passos abaixo para configurar o projeto localmente.
 
-## ⚙️ Instalação e Configuração
-
-Siga estes passos para configurar e rodar o projeto localmente.
-
-### 1\. Clonar o Repositório
+### 1. Clonar o Repositório e Configurar o Ambiente
 
 ```bash
-git clone https://github.com/JoaoPedro-Nascente/joao-pedro-desafio.git
+# Clone o projeto (se ainda não o fez)
+git clone https://github.com/JoaoPedro-Nascente/joao-pedro-desafio
 cd joao-pedro-desafio
-```
 
-### 2\. Configurar o Ambiente Virtual
+# Crie e ative o ambiente virtual
+python -m venv venv
+source venv/Scripts/activate  # Windows
+# source venv/bin/activate    # Linux/Mac
+````
 
-É altamente recomendado usar um ambiente virtual (`venv` ou `conda`) para isolar as dependências:
+### 2\. Instalar Dependências
 
-```bash
-# Cria o ambiente virtual
-python -m venv venv 
-
-# Ativa o ambiente virtual (Linux/macOS)
-source venv/bin/activate
-# Ativa o ambiente virtual (Windows)
-venv\Scripts\activate
-```
-
-### 3\. Instalar Dependências
-
-Instale todos os pacotes necessários (Django, DRF, simplejwt, etc.):
+Instale os pacotes Python necessários (Django, DRF, JWT, CORS, etc.):
 
 ```bash
 pip install -r requirements.txt
+# OU instale manualmente:
+pip install django djangorestframework djangorestframework-simplejwt django-cors-headers coverage
 ```
 
-### 4\. Preparar o Banco de Dados
+### 3\. Configurar o Banco de Dados
 
-Crie o arquivo do banco de dados e aplique as migrações:
+Crie as tabelas iniciais e as tabelas de aplicação (`api_rest_transaction`):
 
 ```bash
-python manage.py makemigrations
+# Cria os arquivos de migração (se houver mudanças no models.py)
+python manage.py makemigrations api_rest
+
+# Aplica todas as migrações ao banco de dados (cria o db.sqlite3)
 python manage.py migrate
 ```
 
-### 5\. Criar Superusuário (Opcional, para Admin)
+### 4\. Criar Usuário Administrador
+
+Crie um usuário para login e testes:
 
 ```bash
 python manage.py createsuperuser
 ```
 
-### 6\. Rodar o Projeto
+### 5\. Executar o Servidor
 
-Inicie o servidor de desenvolvimento:
+Inicie o servidor de desenvolvimento. A API estará disponível em `http://127.0.0.1:8000/`.
 
 ```bash
 python manage.py runserver
 ```
 
-A API estará acessível em `http://127.0.0.1:8000/`.
+## 🔑 Autenticação (JSON Web Tokens - JWT)
 
------
+Todas as rotas de transação são protegidas e exigem um token JWT válido no cabeçalho `Authorization`.
 
-## 🔒 Autenticação JWT e Rotas de Acesso
+### 1\. Obter Token (Login)
 
-Todos os *endpoints* de transação são protegidos. O acesso deve ser feito usando um Access Token válido.
+Para iniciar uma sessão, envie as credenciais do usuário.
 
-### 1\. Cadastro de Usuário (Público)
+| Método | Endpoint |
+| :--- | :--- |
+| `POST` | `/api/token/` |
 
-Cria uma nova conta de usuário para obter acesso à API.
+**Corpo da Requisição (JSON):**
 
-| Método | Endpoint | Descrição |
-| :--- | :--- | :--- |
-| `POST` | `/register/` | Cria um novo usuário com `username` e `password`. |
-
-**Corpo da Requisição:** `{"username": "...", "password": "..."}`
-
-### 2\. Login e Obtenção de Tokens
-
-Utilize este *endpoint* para obter o par de tokens.
-
-| Método | Endpoint | Descrição |
-| :--- | :--- | :--- |
-| `POST` | `/token/` | Recebe `username` e `password`, retorna **`access`** e **`refresh`** tokens. |
-
-### 3\. Uso do Access Token
-
-Para acessar qualquer *endpoint* protegido, inclua o Access Token no cabeçalho `Authorization`:
-
-```http
-Authorization: Bearer <seu_access_token>
+```json
+{
+    "username": "seu_usuario",
+    "password": "sua_senha"
+}
 ```
 
------
+**Resposta de Sucesso:** Retorna o `access` token (usado nas requisições) e o `refresh` token.
 
-## 🌐 Endpoints da API (Recurso: Transações)
+### 2\. Formato do Cabeçalho de Requisição
 
-A API gerencia o modelo `Transaction` com os campos `description`, `amount`, `type` (`income`/`expense`), e `date`.
+Use o token de acesso em todas as rotas protegidas:
 
-| Rota | Método | Descrição | Autenticação |
+```http
+Authorization: Bearer <SEU_ACCESS_TOKEN>
+Content-Type: application/json
+```
+
+## 🗺️ Endpoints da API
+
+O prefixo base para as rotas de Transações é `http://127.0.0.1:8000/api_rest/`.
+
+| Funcionalidade | Método | Endpoint | Descrição |
 | :--- | :--- | :--- | :--- |
-| `/transactions/` | `POST` | Cria uma nova transação. **(Validações OBRIGATÓRIAS)** | Sim |
-| `/transactions/` | `GET` | Lista transações. Permite filtros por `?description=` e `?type=`. Retorna apenas transações do usuário autenticado. | Sim |
-| `/transactions/:id/` | `GET` | Obtém detalhes de uma transação específica. Retorna `404` se não existir. | Sim |
-| `/transactions/:id/` | `PUT/PATCH` | Atualiza uma transação existente. | Sim |
-| `/transactions/:id/` | `DELETE` | Exclui uma transação. Retorna `204 No Content`. | Sim |
-| `/summary/` | `GET` | **Desafio de Lógica:** Calcula e retorna o saldo total (`total_income`, `total_expense`, `net_balance`). | Não |
+| **Listar Transações** | `GET` | `/transactions/` | Lista transações do usuário logado. Suporta Paginação e Filtros. |
+| **Criar Transação** | `POST` | `/transactions/` | Cria uma nova Receita/Despesa. O campo `user` é preenchido automaticamente pelo token. |
+| **Detalhe/CRUD** | `GET` | `/transactions/<id>/` | Retorna detalhes de uma transação específica (requer permissão do dono). |
+| **Atualizar (Total)** | `PUT` | `/transactions/<id>/` | Atualiza **todos** os campos de uma transação. |
+| **Atualizar (Parcial)** | `PATCH` | `/transactions/<id>/` | Atualiza **apenas** os campos fornecidos. |
+| **Excluir Transação** | `DELETE`| `/transactions/<id>/` | Remove a transação do banco de dados (retorna 204 No Content). |
+| **Resumo Financeiro**| `GET` | `/transactions/summary/`| Calcula e retorna o saldo líquido, total de receita e total de despesa do usuário logado. |
 
-## 💎 Requisitos Bônus Implementados
+## 🧪 Testes e Cobertura de Código
 
-O projeto atende aos requisitos bônus de qualidade e funcionalidade:
+Os testes unitários e de integração estão localizados em `api_rest/transactions/tests.py`.
 
-1.  **Testes Automatizados:** Testes unitários foram escritos usando o framework de testes do Django para garantir a cobertura e o funcionamento dos *endpoints* CRUD e de validação.
-2.  **Autenticação JWT:** A API está protegida via `djangorestframework-simplejwt`. Os *endpoints* de transação são restritos ao usuário autenticado e filtram os dados para exibir **apenas as transações pertencentes ao token**.
-3.  **Padrões de Nomenclatura e Estrutura:** O código segue o padrão Python (`snake_case` para funções/variáveis e `PascalCase` para classes) e a estrutura do projeto garante a separação de responsabilidades (serializers, views, models).
-
------
-
-## 🧪 Como Rodar os Testes Automatizados
-
-Para garantir que toda a lógica de negócio (CRUD, filtros, validações e o *endpoint* `/summary/`) está funcionando corretamente, execute o comando:
+### 1\. Rodar Testes
 
 ```bash
+# Roda todos os testes da aplicação 'api_rest'
 python manage.py test api_rest
 ```
 
-Este comando irá criar um banco de dados de teste temporário, executar todos os testes da aplicação `api_rest` e reportar o resultado.
+### 2\. Verificar Cobertura
+
+Para medir a porcentagem de código que seus testes estão executando:
+
+```bash
+# 1. Executa os testes e coleta dados (rastreia apenas a pasta api_rest)
+python -m coverage run --source='api_rest' manage.py test
+
+# 2. Gera o relatório visual (em uma pasta htmlcov/)
+python -m coverage html
+
+# 3. Abre o relatório no navegador para ver as linhas não cobertas.
+# Abra o arquivo htmlcov/index.html
+```

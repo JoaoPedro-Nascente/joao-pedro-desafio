@@ -51,9 +51,6 @@ def transactions_manager(request, id):
     if request.method == 'DELETE':
         return delete_transaction(transaction)
 
-    #Se nenhum método for válido
-    return Response(status.HTTP_405_METHOD_NOT_ALLOWED)
-
 
 def create_new_transaction(data, user):
     new_transaction = data
@@ -99,8 +96,6 @@ def transaction_list_create(request):
         serializer = TransactionSerializer(page_transactions, many=True)
 
         return paginator.get_paginated_response(serializer.data)
-
-    return Response(status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 def create_summary(user):

@@ -8,11 +8,6 @@ class TransactionSerializer(serializers.ModelSerializer):
         read_only=True
     )
     
-    def validate_amount(self, value):
-        if value <= Decimal('0.00'):
-            raise serializers.ValidationError("'Amount' must be positive and greater than zero.")
-        
-        return value
     class Meta:
         model = Transaction
         fields = "__all__"
